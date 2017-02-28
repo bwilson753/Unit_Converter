@@ -1,0 +1,139 @@
+Robert Wilson
+Homework 3
+
+Before I began actually writing out the code, I wanted to be sure that I fully
+understood the problem, I was being asked to solve.  The two most important
+points seemed to be 1) What qualifies as convertible input?  and 2) How can
+the data be converted with the resources available?  I wanted to keep my
+answers to these questions rather esoteric while giving some consideration to
+the fundamental abilities of scheme.
+
+Question 1 involves the evaluation of the two lists given as input.  Based on
+my limited understanding of physics, what was discussed in class, and what was
+written in the exercise description.  it seems that a unit list A can be
+converted to a unit list B if both lists can be converted to the same base
+units, assuming that all exponent values have been maximized (eg. (sec 1)(sec
+1) has been converted to (sec 2), thus there are also no duplicate unit
+values), and every value in list A matches a value in list B and every value in
+list B matches a value in list A.
+
+Question 2 requires maximizing the utility of units.dat.  The key seems to be
+to alter the quantity by manipulating each unit one unit at a time by
+multiplying and dividing using the base units.  For example, suppose you
+wanted to convert 1 mile per minute into inches per second.  Using units.dat
+to acquire the constant values.  For example:
+
+(1 (mi 1)(min -1))
+(1609.344 (m 1)(min -1)) ; multiply 1609.34 (mi (1609.344 (m 1)))
+(63,360 (in 1)(min -1)) 
+(1056 (in 1)(sec -1)); divide 60 (min (60 (sec 1))) ANSWER
+
+For more complex problems, the same logic is utilized except base values are
+manipulated based on higher exponents and values are reduced to base values
+before they are converted to new values.  For example:
+
+Convert two minutes cubed to seconds cubed then back to minutes cubed.
+
+(2 (min 3))
+(120 (sec 1)); multiply constant by 60. (min (60 (sec 1))
+(7200 (sec 2)); multiply by 60 to exponent value 2.
+(432000 (sec 3)); multiply by 60 to exponent value 3.
+(7200 (sec 2)); divide by 60 to exponent value 2.
+(120 (sec 1)); divide by 60 to exponent value 1.
+(2 (min 3)); divide by 60 to manipulate constant.
+
+More generally, all this information can be written as:
+
+U = u U-normalized
+V = v V-normalized
+U = (u/v) V
+a U = (au/v) V
+
+This means that if you normalize the entire value being input and the
+variables (note that I will continuously refer to the various physics values
+as variables.  I did this because mathematically it just made sense to me this
+way) that will be used as the output, you can take (normalized input
+constant)/(normalized output constant) and use it as the constant for the
+answer.  Or in other words, once you have normalized both of the lists with
+their adjusted constants, all you need to do is manipulate those constants to
+get the answer.
+
+Once I began writing the algorithm, the first thing I figured out how to do
+was use the lookup.  With a little thought, I figured out that (assoc val
+source) would work.  I used this to create my first procedure,
+get-normalized-value.  I then began building all the getters that I thought
+that I would need so I wouldn't get confused by whether I needed to make a
+car or cdr or a cadr or a whatever call.
+
+After that I tried to figure out how to normalize the lists.  By adding the
+constant value 1 to the front of the output values list I realized I could
+create one process for both lists.  Dealing with manipulating the constant as
+well as the variables simultaneously was difficult.  So I normalized the
+constants using one set of procedures and I normalized the variables using
+another set of procedures.
+
+I tested each of the procedures as soon as I created them.  Most of the tests
+are still available commented out at the bottom of convert.scm.  With the
+exception of a function mod-exp (a function that makes the appropriate
+modifications to the exponent values when they have been normalized) I seemed
+to figure out all the necessary sub-procedures I needed before final testing.
+
+After I had both lists normalized I knew I had to figure out a way to test the
+two lists for compatibility.  I did this by creating a series of procedures
+that merged the exponents of identical variables.  Once I did this, since
+every variable in each list was now unique, I could simply move down one by
+one down the first list of variables and compare it to the second list to see
+if I could find a matching variable.  If I could do this for every variable in
+the first list, I knew I had compatible lists.
+
+Once I had the ability to normalize, merge exponents, and test for
+compatibility, I knew I could create my final convert procedure.  As I
+mentioned earlier, the only problem I found was that certain compatible lists
+were labeled incompatible because I forgot to alter the exponent value.  I
+added the mod-exp to the procedures that normalized the variables and the
+problem was solved.  Final testing involved three kinds of tests:  Tests with
+variables in different orders, tests that manipulated exponent values, and
+tests that I knew would not be compatible.  The manipulation of the constant
+was assessed during the first two series of tests.
+
+The above description is merely a synopsis of how the algorithm was developed.
+A total of 27 procedures were created.  The details of the code can be best
+understood by reading the comments as well as the code itself.  A significant
+amount of consideration was given to the naming of each procedure, and
+hopefully should help explain what is happening inside some of the
+sub-procedures used to run the larger procedures.
+
+The thing that I learned most from doing this assignment is the esoteric view
+of solving the problem is primarily useful when try to solve the mathematical
+elements of the algorithm.  The key to actually writing good working code is
+to write the simplest procedures you need as soon as you realize you need
+them.  For me, this meant that I would very routinely stop work on a larger
+procedure such as normalized-vars, so I could work on a more subordinate
+routine such as add-normalized-vars.  I also learned that routinely creating
+smaller routines could be sometimes temporarily cumbersome, but it made it
+much easier to test and comprehend my code.  Ultimately, I found writing so
+many small routines to be pretty expedient.  Moreover, when it came to testing
+each routine, if there was a problem, I could usually find the cause quite
+quickly with the help of Dr. Racket.
+
+Given that this code is a stand alone algorithm I did not take the time to
+encapsulate the definitions.  Part of why I did this was because of the old
+saying "If it aint broke don't fix it."  Further, it was not a requirement.
+However, if this code were attached to a larger algorithm, it would be a good
+idea to encapsulate it, given that 27 names were used up in it's development.
+It seems that it would be feasible to encapsulate it so that everything was
+inside the convert definition.  The encapsulation process could be divided
+into four parts, the getters, the normalization procedures (this would have
+procedures inside the larger normalize-all procedure), the merge-exponents
+procedures, and the compatibility procedure.
+
+Finally, there was one question in the homework description that I forgot to
+address above.
+
+Question: why are the quotes necessary?
+(convert '(27.5 (furlong 1)(fortnight -1)) '((mi 1)(hr -1)))
+
+The quotes are necessary so that the values inside the list will be interpreted
+literally and as members of a list.  For example if you put (27.5 (furlong
+1)(fortnight -1)) into the interpreter, it returns "Error: `furlong' is
+undefined."
